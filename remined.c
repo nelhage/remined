@@ -75,6 +75,12 @@ int gameTime;
 
 enum gameState state = game_newGame;
 
+int cheatEnabled;
+char * cheatCode = "xyzzy\r";
+char * currChar;
+SDL_Rect cheatRect;
+Uint32 white, black;
+
 int main(int argc, char ** argv)
 {
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -109,6 +115,11 @@ int main(int argc, char ** argv)
 	smileRect.y = LEFT_BORDER + 4;
 	smileRect.w = SMILE_SIZE;
 	smileRect.h = SMILE_SIZE;
+	
+	cheatRect.x = 0;
+	cheatRect.y = 0;
+	cheatRect.w = 1;
+	cheatRect.h = 1;
 		
 	screen = SDL_SetVideoMode(screenRect.w,
 							  screenRect.h,
@@ -117,6 +128,9 @@ int main(int argc, char ** argv)
 		fprintf(stderr, "Couldn't open video: %s\n", SDL_GetError());
 		exit(-1);
 	}
+	
+	white = SDL_MapRGB(screen->format, 255, 255, 255);
+	black = SDL_MapRGB(screen->format, 0, 0, 0);
 
 	loadImages();
 	initGame();
@@ -239,6 +253,9 @@ void initGame()
 		board[i] = malloc(sizeof(struct boardSquare) * boardWidth);
 
 	srand(SDL_GetTicks());
+	
+	cheatEnabled = 0;
+	currChar = cheatCode;
 }
 
 void newGame()
@@ -318,6 +335,12 @@ void runGame()
 					screenToGrid(e.motion.x, e.motion.y, &gridx, &gridy);
 					mouseMove(e.motion.state, gridx, gridy);
 				}
+				break;
+			case SDL_KEYDOWN:
+				if(!cheatEnabled && e.key.keysym.sym == *currChar) {
+					currChar++;
+					cheatEnabled = !*currChar;
+				} else currChar = cheatCode;
 				break;
 			}
 		} else redrawBoard();
@@ -411,7 +434,6 @@ void mouseUp(Uint8 button, Sint16 gridx, Sint16 gridy)
 	
 	if(button == SDL_BUTTON_LEFT && !bothClick) {
 		openSquare(gridx, gridy);
-		currentx = currenty = -1;
 	}
 
 	if(bothClick &&
@@ -429,7 +451,7 @@ void mouseMove(Uint8 state, Sint16 gridx, Sint16 gridy)
 {
 	if(gridx == currentx && gridy == currenty)
 		return;
-
+	
 	if(state & SDL_BUTTON_LEFT) {
 		if(leftDown && rightDown) {
 			bothUp(currentx, currenty);
@@ -438,10 +460,10 @@ void mouseMove(Uint8 state, Sint16 gridx, Sint16 gridy)
 			unpressSquare(currentx, currenty);
 			pressSquare(gridx, gridy);
 		}
-
-		currentx = gridx;
-		currenty = gridy;
 	}
+	
+	currentx = gridx;
+	currenty = gridy;
 }
 
 void openSquare(Sint16 gridx, Sint16 gridy)
@@ -599,6 +621,7 @@ void redrawBoard()
 	int row,col;
 	SDL_Rect dst;
 	SDL_Surface * img;
+	struct boardSquare * square;
 
 	SDL_BlitSurface(background, NULL, screen, &screenRect);
 
@@ -648,6 +671,10 @@ void redrawBoard()
 			}
 			SDL_BlitSurface(img, NULL, screen, &dst);
 		}
+			
+	if(cheatEnabled && (square = getSquare(currentx, currenty))) {
+		SDL_FillRect(screen, &cheatRect, square->type==type_Mine?black:white);
+	}
 
 	SDL_Flip(screen);
 }
