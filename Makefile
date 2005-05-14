@@ -1,9 +1,9 @@
 CFLAGS=`sdl-config --cflags` -Wall
 LDFLAGS=`sdl-config --libs`
 
-mines: mines.o
+remined: remined.o
 
-mines.o: mines.c mines.h
+remined.o: remined.c remined.h
 
 clean:
-	rm -f mines.o mines
+	rm -f remines.o remined
