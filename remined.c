@@ -64,6 +64,7 @@ struct boardSquare ** board;
 Sint16 currentx, currenty;
 
 int bothClick;
+int ctrlDown;
 int leftDown;
 int rightDown;
 enum smilePressedMode smilePressed;
@@ -413,13 +414,16 @@ void mouseDown(Uint8 button, Sint16 gridx, Sint16 gridy)
 	else if(button == SDL_BUTTON_RIGHT)
 		rightDown = 1;
 	
-	if(leftDown && rightDown) {
+	currentx = gridx;
+	currenty = gridy;
+	
+	ctrlDown = SDL_GetModState()&KMOD_CTRL;
+	
+	if(leftDown && (rightDown || ctrlDown)) {
 		bothClick = 1;
 		bothDown(gridx, gridy);
 	} else if(button == SDL_BUTTON_LEFT && !bothClick) {
 		pressSquare(gridx, gridy);
-		currentx = gridx;
-		currenty = gridy;
 	} else if(button == SDL_BUTTON_RIGHT && !bothClick) {
 		markSquare(gridx, gridy);
 	}
@@ -453,7 +457,7 @@ void mouseMove(Uint8 state, Sint16 gridx, Sint16 gridy)
 		return;
 	
 	if(state & SDL_BUTTON_LEFT) {
-		if(leftDown && rightDown) {
+		if(leftDown && (rightDown || ctrlDown)) {
 			bothUp(currentx, currenty);
 			bothDown(gridx, gridy);
 		} else if(!bothClick) {
