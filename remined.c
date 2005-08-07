@@ -413,6 +413,8 @@ void mouseDown(Uint8 button, Sint16 gridx, Sint16 gridy)
 		leftDown = 1;
 	else if(button == SDL_BUTTON_RIGHT)
 		rightDown = 1;
+    else if(button == SDL_BUTTON_MIDDLE)
+        leftDown = rightDown = 1;
 	
 	currentx = gridx;
 	currenty = gridy;
@@ -435,14 +437,17 @@ void mouseUp(Uint8 button, Sint16 gridx, Sint16 gridy)
 		leftDown = 0;
 	else if(button == SDL_BUTTON_RIGHT)
 		rightDown = 0;
+    else if(button == SDL_BUTTON_MIDDLE) {
+		int mouse = SDL_GetMouseState(NULL, NULL);
+		leftDown = mouse & SDL_BUTTON_LEFT == SDL_BUTTON_LEFT;
+		rightDown = mouse & SDL_BUTTON_RIGHT == SDL_BUTTON_RIGHT;
+	}
 	
 	if(button == SDL_BUTTON_LEFT && !bothClick) {
 		openSquare(gridx, gridy);
 	}
 
-	if(bothClick &&
-	   (button == SDL_BUTTON_RIGHT ||
-		button == SDL_BUTTON_LEFT)) {
+	if(bothClick && !(leftDown && rightDown)) {
 		bothUp(gridx, gridy);
 		doBothClick(gridx, gridy);
 	}	   
@@ -456,8 +461,8 @@ void mouseMove(Uint8 state, Sint16 gridx, Sint16 gridy)
 	if(gridx == currentx && gridy == currenty)
 		return;
 	
-	if(state & SDL_BUTTON_LEFT) {
-		if(leftDown && (rightDown || ctrlDown)) {
+    if((state & SDL_BUTTON_LEFT) || (state & SDL_BUTTON_MIDDLE)) {
+        if(leftDown && (rightDown || ctrlDown)) {
 			bothUp(currentx, currenty);
 			bothDown(gridx, gridy);
 		} else if(!bothClick) {
@@ -483,7 +488,7 @@ void openSquare(Sint16 gridx, Sint16 gridy)
 	square = getSquare(gridx, gridy);
 	
 	if(!square ||
-	   square->click != click_Closed && square->click != click_Pressed) {
+	   (square->click != click_Closed && square->click != click_Pressed)) {
 		return;
 	}
 	
