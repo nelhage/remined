@@ -1,4 +1,5 @@
-CFLAGS=`sdl-config --cflags` -Wall
+CC=gcc
+CFLAGS=`sdl-config --cflags` -Wall -O3
 LDFLAGS=`sdl-config --libs`
 
 remined: remined.o
@@ -6,4 +7,4 @@ remined: remined.o
 remined.o: remined.c remined.h
 
 clean:
-	rm -f remines.o remined
+	rm -f remined.o remined
