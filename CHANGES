@@ -1,0 +1,43 @@
+*** Version 0.6 - 2005-08-23 ***
+
+* Improved performance: No longer hogs 100% CPU even when idle, and
+  stays at 0% during expert play on my 1.7Ghz Pentium
+
+* Added command-line arguments to specify the board size, as well as
+  presets for beginner, intermediate, and expert, and an option to use
+  or not use the '?' ``mark'', as well as a usage message
+
+* F2 now starts a new game, like on Windows
+
+* The timer now properly stops at 999
+
+* The cheat now continues to toggle after game over
+
+* The cheat now requires right shift at the end of the combination,
+  like on Windows
+
+* Palettized all the bitmaps, significantly reducing size on disk
+
+* Some minor code cleanup and beautification, including an attack of
+  80-column OCD.
+
+* `make clean' now actually deletes the .o
+
+*** Version 0.56 - 2005-08-07 ***
+
+* Middle-click now functions like a both-click. Thanks to Simon Biber
+  pointing out it should.
+
+
+*** Version 0.55 - 2005-05-26 ***
+
+* Added ctrl-click (CMD-click on OS X) to function like a both-click
+
+* Added the cheat Easter egg, almost the same as on Windows, but with
+  two distinctions:
+  - It uses (0,0) of the game board, not the monitor
+  - It doesn't require the `shift' at the end of the combo
+
+*** Version 0.50 - 2005-05-09 ***
+
+* Initial release

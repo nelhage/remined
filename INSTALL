@@ -1,0 +1,7 @@
+ReMined requires a working SDL installation (http://libsdl.org)
+
+Assuming that's installed, you should just be able to run `make' from
+the command line, and it should build fine. At the moment, the binary
+needs the images/ directory to run, and has to be run with a cwd right
+below that dir (e.g. right in root of the CVS co). This should change
+to be more relocatable in a future version.
