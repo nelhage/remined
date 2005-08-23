@@ -1,4 +1,8 @@
-remined.xcode/*.mode*
-remined.xcode/*.pbxuser
 .DS_Store
+TAGS
 build
+remined
+remined.o
+remined.xcodeproj
+remined.xcodeproj/*.mode*
+remined.xcodeproj/*.pbxuser
