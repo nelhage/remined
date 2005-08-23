@@ -27,6 +27,7 @@
 
 #include "SDL.h"
 #include <stdlib.h>
+#include <getopt.h>
 
 #include "remined.h"
 
@@ -53,6 +54,7 @@ SDL_Surface    *smilepressed;
 int boardWidth;
 int boardHeight;
 int numMines;
+int useMark;			//Use the '?' mark, or just flag/no-flag if false.
 
 SDL_Rect screenRect;
 SDL_Rect boardRect;
@@ -67,6 +69,7 @@ int bothClick;
 int ctrlDown;
 int leftDown;
 int rightDown;
+int lastRedraw;
 enum smilePressedMode smilePressed;
 
 int squaresOpened;
@@ -77,8 +80,8 @@ int gameTime;
 enum gameState state = game_newGame;
 
 int cheatEnabled;
-char * cheatCode = "xyzzy\r";
-char * currChar;
+int cheatCode[] = {'x', 'y', 'z', 'z', 'y', SDLK_RETURN, SDLK_RSHIFT, 0};
+int * currChar;
 SDL_Rect cheatRect;
 Uint32 white, black;
 
@@ -91,37 +94,9 @@ int main(int argc, char ** argv)
 
 	atexit(SDL_Quit);
 
-		/* Beginner */
-	/*	boardWidth = 9;
-	boardHeight = 9;
-	numMines = 10;*/
-	/* Expert*/
-
-	boardWidth = 31;
-	boardHeight = 16;
-	numMines = 99;
-
-
-	screenRect.x = 0;
-	screenRect.y = 0;
-	screenRect.w = SQUARE_SIZE * boardWidth + LEFT_BORDER + RIGHT_BORDER;
-	screenRect.h = SQUARE_SIZE * boardHeight + BOTTOM_BORDER + HEADER_SIZE;
-
-	boardRect.x = LEFT_BORDER;
-	boardRect.y = HEADER_SIZE;
-	boardRect.w = SQUARE_SIZE * boardWidth;
-	boardRect.h = SQUARE_SIZE * boardHeight;
-
-	smileRect.x = boardRect.x + (boardRect.w/2 - SMILE_SIZE/2);
-	smileRect.y = LEFT_BORDER + 4;
-	smileRect.w = SMILE_SIZE;
-	smileRect.h = SMILE_SIZE;
+	parseArgs(argc, argv);
+	initBoundaryRects();
 	
-	cheatRect.x = 0;
-	cheatRect.y = 0;
-	cheatRect.w = 1;
-	cheatRect.h = 1;
-		
 	screen = SDL_SetVideoMode(screenRect.w,
 							  screenRect.h,
 							  32, SDL_SWSURFACE|SDL_DOUBLEBUF);
@@ -144,6 +119,129 @@ int main(int argc, char ** argv)
 	return 0;
 }
 
+void usage()
+{
+	printf("Usage: %s [OPTIONS]\n", "remined");
+	printf("\n");
+	printf("Mandatory arguments to long options are mandatory for short options too.\n");
+	printf("  -w, --width=W               Set the board width\n");
+	printf("  -h, --height=H              Set the board height\n");
+	printf("  -m, --mines=M               Set the number of mines on the board\n");
+	printf("  -a, --mark                  Enable the use of the '?' ``mark''\n");
+	printf("  -b, --beginner              Equivalent to -h9 -w9 -m10\n");
+	printf("  -i, --intermediate          Equivalent to -h16 -w16 -m40\n");
+	printf("  -e, --expert                Equivalent to -h16 -w31 -m99\n");
+	printf("      --help                  Display this help and exit\n");
+	printf("\nWith no options, assume an expert game.\n");
+	printf("\nReport bugs to <hanji@users.sourceforge.net>\n");
+	exit(1);
+}
+
+void parseArgs(int argc, char ** argv)
+{
+    static struct option long_options[] =
+        {
+            {"width",           1, 0, 'w'},
+            {"height",          1, 0, 'h'},
+            {"mines",           1, 0, 'm'},
+            {"mark",            0, 0, 'a'},
+            {"beginner",        0, 0, 'b'},
+            {"intermediate",    0, 0, 'i'},
+            {"expert",          0, 0, 'e'},
+            {"help",            0, 0,  0},
+            {0,0,0,0}
+        };
+    int arg;
+    
+    //Set defaults
+	boardWidth = 31;
+	boardHeight = 16;
+	numMines = 99;
+	useMark = 0;
+
+    while((arg = getopt_long(argc, argv, "w:h:m:abie",
+                             long_options, NULL)) >= 0) {
+        switch(arg) {
+        case 'w':
+            if(!(boardWidth = atoi(optarg))) {
+                printf("Unable to understand width: %s\n", optarg);
+                usage();
+            }
+            break;
+        case 'h':
+            if(!(boardHeight = atoi(optarg))) {
+                printf("Unable to understand height: %s\n", optarg);
+                usage();
+            }
+            break;
+        case 'm':
+            if(!(numMines = atoi(optarg))) {
+                printf("Unable to understand number of mines: %s\n",
+                       optarg);
+                usage();
+            }
+            break;
+        case 'a':
+            useMark = 1;
+            break;
+        case 'b':
+            boardWidth = 9;
+			boardHeight = 9;
+			numMines = 10;
+            break;
+        case 'i':
+            boardWidth = 16;
+			boardHeight = 16;
+			numMines = 40;
+            break;
+        case 'e':
+            boardWidth = 31;
+			boardHeight = 16;
+			numMines = 99;
+            break;
+        default:
+            usage();
+        }
+    }
+    if(optind < argc)
+        usage();
+
+	if(boardWidth < MIN_WIDTH) {
+		printf("Width must be at least %d\n", MIN_WIDTH);
+		usage();
+	} else if(boardHeight < MIN_HEIGHT) {
+		printf("Height must be at least %d\n", MIN_HEIGHT);
+		usage();
+	} else if(numMines * 2 >= boardWidth * boardHeight) {
+		printf("Mines must take up less than 50%% of the board.\n");
+		usage();
+	}
+}
+
+void initBoundaryRects()
+{
+	
+	screenRect.x = 0;
+	screenRect.y = 0;
+	screenRect.w = SQUARE_SIZE * boardWidth + LEFT_BORDER + RIGHT_BORDER;
+	screenRect.h = SQUARE_SIZE * boardHeight + BOTTOM_BORDER + HEADER_SIZE;
+
+	boardRect.x = LEFT_BORDER;
+	boardRect.y = HEADER_SIZE;
+	boardRect.w = SQUARE_SIZE * boardWidth;
+	boardRect.h = SQUARE_SIZE * boardHeight;
+
+	smileRect.x = boardRect.x + (boardRect.w/2 - SMILE_SIZE/2);
+	smileRect.y = TOP_BORDER + 4;
+	smileRect.w = SMILE_SIZE;
+	smileRect.h = SMILE_SIZE;
+	
+	cheatRect.x = 0;
+	cheatRect.y = 0;
+	cheatRect.w = 1;
+	cheatRect.h = 1;
+}
+
 SDL_Surface * loadImage(char * fn)
 {
 	char buff[256];
@@ -161,7 +259,8 @@ void loadImages()
 	int i;
 	char filename[256];
 	SDL_PixelFormat *fmt;
-	SDL_Surface *topleft, *topright, *bottomleft, *bottomright, *left, *right, *top, *bottom;
+	SDL_Surface *topleft, *topright, *bottomleft,
+        *bottomright, *left, *right, *top, *bottom;
 	SDL_Rect dst;
 	
 	blank = loadImage("blank");
@@ -191,9 +290,16 @@ void loadImages()
 	smileoh = loadImage("smileoh");
 	smilepressed = loadImage("smilepressed");
 
-	/*Load background images and composite them onto a single background surface*/
+	/*
+      Load background images and composite
+      them onto a single background surface
+    */
 	fmt = screen->format;
-	background = SDL_CreateRGBSurface(SDL_HWSURFACE, screenRect.w, screenRect.h, 32, fmt->Rmask, fmt->Gmask, fmt->Bmask, fmt->Amask);
+	background = SDL_CreateRGBSurface(SDL_HWSURFACE,
+                                      screenRect.w, screenRect.h,
+                                      32,
+                                      fmt->Rmask, fmt->Gmask,
+                                      fmt->Bmask, fmt->Amask);
 	topleft = loadImage("topleft");
 	topright = loadImage("topright");
 	bottomleft = loadImage("bottomleft");
@@ -277,6 +383,7 @@ void newGame()
 	gameTime = 0;
 	squaresOpened = 0;
 	smilePressed = smile_notPressed;
+	lastRedraw = 0;
 }
 
 void runGame()
@@ -285,7 +392,7 @@ void runGame()
 	int quit=0;
 	Sint16 gridx, gridy;
 	
-
+	redrawBoard();
 	while(!quit) {
 		if(SDL_PollEvent(&e)) {
 			switch(e.type) {
@@ -293,58 +400,64 @@ void runGame()
 				quit = 1;
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				if(e.button.x > smileRect.x &&
-				   e.button.x < smileRect.x + smileRect.w &&
-				   e.button.y > smileRect.y &&
-				   e.button.y < smileRect.y + smileRect.h) {
-					if(e.button.button == SDL_BUTTON_LEFT)
+				if(pointInRect(e.button.x, e.button.y, &smileRect)) {
+					if(e.button.button == SDL_BUTTON_LEFT) {
+                        lastRedraw = 0;
 						smilePressed = smile_isPressed;
+                    }
 				}
-				if(state == game_newGame || (state == game_playing && smilePressed == smile_notPressed)) {
-					   screenToGrid(e.button.x, e.button.y, &gridx, &gridy);
-					   mouseDown(e.button.button, gridx, gridy);
-				   }
-				   break;
+				if(state == game_newGame
+                   || (state == game_playing
+                       && smilePressed == smile_notPressed)) {
+					screenToGrid(e.button.x, e.button.y, &gridx, &gridy);
+					mouseDown(e.button.button, gridx, gridy);
+				}
+				break;
 			case SDL_MOUSEBUTTONUP:
 				if(smilePressed != smile_notPressed) {
 					if(e.button.button == SDL_BUTTON_LEFT) {
-						if(e.button.x > smileRect.x &&
-						   e.button.x < smileRect.x + smileRect.w &&
-						   e.button.y > smileRect.y &&
-						   e.button.y < smileRect.y + smileRect.h) {
+						if(pointInRect(e.button.x,
+                                       e.button.y,
+                                       &smileRect)) {
 							newGame();
 						}
 						smilePressed = smile_notPressed;
 					}
 				}
 				else if(state == game_newGame || state == game_playing) {
-						screenToGrid(e.button.x, e.button.y, &gridx, &gridy);
-						mouseUp(e.button.button, gridx, gridy);
+					screenToGrid(e.button.x, e.button.y, &gridx, &gridy);
+					mouseUp(e.button.button, gridx, gridy);
 				}
 				break;
 			case SDL_MOUSEMOTION:
-				if(smilePressed != smile_notPressed) {
-					if(e.button.x > smileRect.x &&
-					   e.button.x < smileRect.x + smileRect.w &&
-					   e.button.y > smileRect.y &&
-					   e.button.y < smileRect.y + smileRect.h)
+                if(smilePressed != smile_notPressed) {
+					if(pointInRect(e.button.x, e.button.y, &smileRect))
 						smilePressed = smile_isPressed;
 					else
 						smilePressed = smile_wasPressed;
-				} else
-					if(state == game_newGame || state == game_playing) {
-					screenToGrid(e.motion.x, e.motion.y, &gridx, &gridy);
-					mouseMove(e.motion.state, gridx, gridy);
-				}
+                    lastRedraw = 0;
+				} else {
+                    screenToGrid(e.motion.x, e.motion.y, &gridx, &gridy);
+                    mouseMove(e.motion.state, gridx, gridy);
+                }
+
 				break;
 			case SDL_KEYDOWN:
 				if(!cheatEnabled && e.key.keysym.sym == *currChar) {
 					currChar++;
 					cheatEnabled = !*currChar;
 				} else currChar = cheatCode;
+				if(e.key.keysym.sym == SDLK_F2) {
+					newGame();
+				}
 				break;
 			}
-		} else redrawBoard();
+		} else {
+			if(SDL_GetTicks() - lastRedraw > 900)
+				redrawBoard();
+			else
+				SDL_Delay(50);
+		}
 	}
 }
 
@@ -379,10 +492,18 @@ void shutDown()
 	free(board);
 }
 
-void screenToGrid(Sint16 screenx, Sint16 screeny, Sint16 *gridx, Sint16 *gridy)
+int pointInRect(Uint16 x, Uint16 y, SDL_Rect * rect)
 {
-	if(screenx < boardRect.x || screenx > (boardRect.x + boardRect.w) ||
-	   screeny < boardRect.y || screeny > (boardRect.y + boardRect.h)) {
+	return (x > rect->x &&
+			x < rect->x + rect->w &&
+			y > rect->y &&
+			y < rect->y + rect->h);
+}
+
+void screenToGrid(Sint16 screenx, Sint16 screeny,
+                  Sint16 *gridx, Sint16 *gridy)
+{
+	if(!pointInRect(screenx, screeny, &boardRect)) {
 		*gridx = -1;
 		*gridy = -1;
 	} else {
@@ -391,7 +512,8 @@ void screenToGrid(Sint16 screenx, Sint16 screeny, Sint16 *gridx, Sint16 *gridy)
 	}
 }
 
-void gridToScreen(Sint16 gridx, Sint16 gridy, Sint16 *screenx, Sint16 *screeny)
+void gridToScreen(Sint16 gridx, Sint16 gridy,
+                  Sint16 *screenx, Sint16 *screeny)
 {
 	*screenx = gridx * SQUARE_SIZE + boardRect.x;
 	*screeny = gridy * SQUARE_SIZE + boardRect.y;
@@ -439,10 +561,15 @@ void mouseUp(Uint8 button, Sint16 gridx, Sint16 gridy)
 		rightDown = 0;
     else if(button == SDL_BUTTON_MIDDLE) {
 		int mouse = SDL_GetMouseState(NULL, NULL);
-		leftDown = mouse & SDL_BUTTON_LEFT == SDL_BUTTON_LEFT;
-		rightDown = mouse & SDL_BUTTON_RIGHT == SDL_BUTTON_RIGHT;
+		leftDown = (mouse & SDL_BUTTON_LEFT) == SDL_BUTTON_LEFT;
+		rightDown = (mouse & SDL_BUTTON_RIGHT) == SDL_BUTTON_RIGHT;
 	}
-	
+
+    //Force a redraw, because the smile transitions from the `o' face
+    lastRedraw = 0;     
+    
+    if(gridx < 0 || gridy < 0) return;
+    
 	if(button == SDL_BUTTON_LEFT && !bothClick) {
 		openSquare(gridx, gridy);
 	}
@@ -456,12 +583,16 @@ void mouseUp(Uint8 button, Sint16 gridx, Sint16 gridy)
 		bothClick = 0;
 }
 
-void mouseMove(Uint8 state, Sint16 gridx, Sint16 gridy)
+void mouseMove(Uint8 buttons, Sint16 gridx, Sint16 gridy)
 {
 	if(gridx == currentx && gridy == currenty)
 		return;
-	
-    if((state & SDL_BUTTON_LEFT) || (state & SDL_BUTTON_MIDDLE)) {
+
+    if(cheatEnabled)
+        lastRedraw = 0;
+
+    if((state == game_newGame || state == game_playing) &&
+       ((buttons & SDL_BUTTON_LEFT) || (buttons & SDL_BUTTON_MIDDLE))) {
         if(leftDown && (rightDown || ctrlDown)) {
 			bothUp(currentx, currenty);
 			bothDown(gridx, gridy);
@@ -485,6 +616,7 @@ void openSquare(Sint16 gridx, Sint16 gridy)
 		startTime = SDL_GetTicks();
 	}
 
+    lastRedraw = 0;
 	square = getSquare(gridx, gridy);
 	
 	if(!square ||
@@ -535,6 +667,7 @@ void pressSquare(Sint16 gridx, Sint16 gridy)
 	struct boardSquare * square = getSquare(gridx, gridy);
 	if(square && square->click == click_Closed)
 		square->click = click_Pressed;
+	lastRedraw = 0;
 }
 
 void unpressSquare(Sint16 gridx, Sint16 gridy)
@@ -542,6 +675,7 @@ void unpressSquare(Sint16 gridx, Sint16 gridy)
 	struct boardSquare * square = getSquare(gridx, gridy);
 	if(square && square->click == click_Pressed)
 		square->click = click_Closed;
+	lastRedraw = 0;
 }
 
 void doBothClick(Sint16 gridx, Sint16 gridy)
@@ -560,11 +694,12 @@ void doBothClick(Sint16 gridx, Sint16 gridy)
 			else if((square = getSquare(gridx + dx, gridy + dy)) &&
 					square->click == click_Flagged)
 				flags++;
-
+	
 	if(flags == getSquare(gridx, gridy)->type) {
 		for(dx=-1;dx<=1;dx++)
 			for(dy=-1;dy<=1;dy++)
 				openSquare(gridx + dx, gridy + dy);
+	lastRedraw = 0;
 	}
 }
 
@@ -579,7 +714,7 @@ void markSquare(Sint16 gridx, Sint16 gridy)
 		mineCount--;
 		break;
 	case click_Flagged:
-		square->click = click_Question;
+		square->click = useMark ? click_Question : click_Closed;
 		mineCount++;
 		break;
 	case click_Question:
@@ -588,6 +723,7 @@ void markSquare(Sint16 gridx, Sint16 gridy)
 	default:
 		break;
 	}
+	lastRedraw = 0;
 }
 
 void generateBoard(Sint16 initx, Sint16 inity)
@@ -627,65 +763,99 @@ void generateBoard(Sint16 initx, Sint16 inity)
 
 void redrawBoard()
 {
-	int row,col;
-	SDL_Rect dst;
-	SDL_Surface * img;
-	struct boardSquare * square;
-
+    struct boardSquare * square;
 	SDL_BlitSurface(background, NULL, screen, &screenRect);
 
-	drawNum(mineCount, LEFT_BORDER + NUM_HSPACE, LEFT_BORDER + NUM_VSPACE);
-
-	if(state == game_playing)
-		/*Start counting from 1, not 0, to emulate the behavior of the original*/
-		gameTime = (SDL_GetTicks() - startTime) / 1000 + 1;  
-	drawNum(gameTime, screenRect.w - RIGHT_BORDER - NUM_HSPACE - 3*DIGIT_WIDTH, LEFT_BORDER + NUM_VSPACE);
-
-	if(smilePressed == smile_isPressed)
-		img = smilepressed;
-	else if(state == game_won)
-		img = smilewin;
-	else if(state == game_lost)
-		img = smilelose;
-	else
-		img = leftDown ? smileoh : smile;
-
-	SDL_BlitSurface(img, NULL, screen, &smileRect);
-
-	for(row=0;row<boardHeight;row++)
-		for(col=0;col<boardWidth;col++) {
-			gridToScreen(col, row, &dst.x, &dst.y);
-			if(state != game_lost) {
-				if(board[row][col].click == click_Flagged ||
-						(board[row][col].type == type_Mine && state == game_won))
-					img = flag;
-				else if(board[row][col].click == click_Closed)
-					img = blank;
-				else if(board[row][col].click == click_Pressed)
-					img = pressed;
-				else if(board[row][col].click == click_Question)
-					img = question;
-				else
-					img = opened[board[row][col].type];
-			} else {
-				if(board[row][col].type == type_Mine)
-					img = (board[row][col].click == click_Flagged) ? flag :
-						(board[row][col].click == click_Opened) ? minedeath : mine;
-				else if(board[row][col].click == click_Flagged)
-					img = misflagged;
-				else if(board[row][col].click == click_Opened)
-					img = opened[board[row][col].type];
-				else
-					img = blank;
-			}
-			SDL_BlitSurface(img, NULL, screen, &dst);
-		}
-			
-	if(cheatEnabled && (square = getSquare(currentx, currenty))) {
-		SDL_FillRect(screen, &cheatRect, square->type==type_Mine?black:white);
+    drawMineCount();
+    drawTimer();
+    drawSmile();
+    drawSquares();
+    
+	if(cheatEnabled) {
+        square = getSquare(currentx, currenty);
+        if(square && square->type == type_Mine)
+            SDL_FillRect(screen, &cheatRect, black);
+        else
+            SDL_FillRect(screen, &cheatRect, white);
 	}
 
 	SDL_Flip(screen);
+	lastRedraw = SDL_GetTicks();
+}
+
+void drawMineCount()
+{
+    drawNum(mineCount,
+            LEFT_BORDER + NUM_HSPACE,
+            TOP_BORDER + NUM_VSPACE);
+}
+
+void drawTimer()
+{
+    if(state == game_playing && gameTime < 999) {
+		/*Start counting from 1, not 0, to emulate the original's behavior*/
+		gameTime = (SDL_GetTicks() - startTime) / 1000 + 1;
+		if(gameTime >= 999)
+			gameTime = 999;
+	}
+	drawNum(gameTime, (screenRect.w - RIGHT_BORDER
+                       - NUM_HSPACE - 3*DIGIT_WIDTH),
+            TOP_BORDER + NUM_VSPACE);
+}
+
+void drawSmile()
+{
+    SDL_Surface * smileimg = NULL;
+    
+	if(smilePressed == smile_isPressed)
+		smileimg = smilepressed;
+	else if(state == game_won)
+		smileimg = smilewin;
+	else if(state == game_lost)
+		smileimg = smilelose;
+	else
+		smileimg = leftDown ? smileoh : smile;
+
+	SDL_BlitSurface(smileimg, NULL, screen, &smileRect);
+}
+
+void drawSquares()
+{
+    int row,col;
+
+    for(row=0;row<boardHeight;row++)
+		for(col=0;col<boardWidth;col++)
+            drawSquare(row, col);
+}
+
+void drawSquare(int row, int col) {
+    SDL_Rect dst;
+	SDL_Surface * img;
+    gridToScreen(col, row, &dst.x, &dst.y);
+    if(state != game_lost) {
+        if(board[row][col].click == click_Flagged ||
+           (board[row][col].type == type_Mine && state == game_won))
+            img = flag;
+        else if(board[row][col].click == click_Closed)
+            img = blank;
+        else if(board[row][col].click == click_Pressed)
+            img = pressed;
+        else if(board[row][col].click == click_Question)
+            img = question;
+        else
+            img = opened[board[row][col].type];
+    } else {
+        if(board[row][col].type == type_Mine)
+            img = (board[row][col].click == click_Flagged) ? flag :
+                (board[row][col].click == click_Opened) ? minedeath : mine;
+        else if(board[row][col].click == click_Flagged)
+            img = misflagged;
+        else if(board[row][col].click == click_Opened)
+            img = opened[board[row][col].type];
+        else
+            img = blank;
+    }
+    SDL_BlitSurface(img, NULL, screen, &dst);
 }
 
 void drawNum(int num, Sint16 x, Sint16 y)

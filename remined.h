@@ -30,6 +30,7 @@
 
 #define SQUARE_SIZE 16
 #define LEFT_BORDER 12
+#define TOP_BORDER LEFT_BORDER
 #define BOTTOM_BORDER 8
 #define RIGHT_BORDER 8
 #define HEADER_SIZE 55
@@ -38,6 +39,9 @@
 #define NUM_VSPACE  5
 
 #define SMILE_SIZE  26
+
+#define MIN_WIDTH 8
+#define MIN_HEIGHT 5
 
 enum squareType
 	{
@@ -76,6 +80,10 @@ enum smilePressedMode
 		smile_isPressed
 	};
 
+void usage();
+void parseArgs(int argc, char ** argv);
+
+void initBoundaryRects();
 SDL_Surface * loadImage(char * filename);
 void loadImages();
 void initGame();
@@ -84,8 +92,11 @@ void shutDown();
 
 void runGame();
 
-void screenToGrid(Sint16 screenx, Sint16 screeny, Sint16 *gridx, Sint16 *gridy);
-void gridToScreen(Sint16 gridx, Sint16 gridy, Sint16 *screenx, Sint16 *screeny);
+int pointInRect(Uint16 x, Uint16 y, SDL_Rect * rect);
+void screenToGrid(Sint16 screenx, Sint16 screeny,
+                  Sint16 *gridx, Sint16 *gridy);
+void gridToScreen(Sint16 gridx, Sint16 gridy,
+                  Sint16 *screenx, Sint16 *screeny);
 struct boardSquare* getSquare(Sint16 gridx, Sint16 gridy);
 
 void mouseDown(Uint8 button, Sint16 x, Sint16 y);
@@ -103,6 +114,11 @@ void markSquare(Sint16 x, Sint16 y);
 void generateBoard(Sint16 initx, Sint16 inity);
 
 void redrawBoard();
+void drawMineCount();
+void drawTimer();
+void drawSmile();
+void drawSquares();
+void drawSquare(int row, int col);
 void drawNum(int num, Sint16 x, Sint16 y);
 
 #endif
