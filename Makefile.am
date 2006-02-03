@@ -1,4 +1,4 @@
-AM_CFLAGS = -DREMINED_RESOURCES=\"@prefix@/remined\"
+AM_CFLAGS = -DREMINED_RESOURCES=\"@prefix@/share/remined\"
 
 bin_PROGRAMS = remined
 remined_SOURCES = remined.c

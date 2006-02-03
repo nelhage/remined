@@ -1572,7 +1572,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=remined
- VERSION=0.60
+ VERSION=0.61
 
 
 cat >>confdefs.h <<_ACEOF
