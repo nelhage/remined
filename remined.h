@@ -86,6 +86,7 @@ void parseArgs(int argc, char ** argv);
 void initBoundaryRects();
 SDL_Surface * loadImage(char * filename);
 void loadImages();
+void generateBackground();
 void initGame();
 void newGame();
 void shutDown();

@@ -1,3 +1,8 @@
+*** Version 0.61 - 2006-02-03 ***
+
+* Moved everything over to automake and autoconf, so you can now
+  actually install, rather than running out of the build directory
+
 *** Version 0.6 - 2005-08-23 ***
 
 * Improved performance: No longer hogs 100% CPU even when idle, and

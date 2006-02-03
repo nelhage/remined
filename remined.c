@@ -95,6 +95,11 @@ int main(int argc, char ** argv)
 	atexit(SDL_Quit);
 
 	parseArgs(argc, argv);
+
+#ifdef REMINED_RESOURCES
+	chdir(REMINED_RESOURCES);
+#endif	
+	
 	initBoundaryRects();
 	
 	screen = SDL_SetVideoMode(screenRect.w,
@@ -104,6 +109,8 @@ int main(int argc, char ** argv)
 		fprintf(stderr, "Couldn't open video: %s\n", SDL_GetError());
 		exit(-1);
 	}
+
+	SDL_WM_SetCaption("ReMined", "ReMined");
 	
 	white = SDL_MapRGB(screen->format, 255, 255, 255);
 	black = SDL_MapRGB(screen->format, 0, 0, 0);
@@ -258,11 +265,7 @@ void loadImages()
 {
 	int i;
 	char filename[256];
-	SDL_PixelFormat *fmt;
-	SDL_Surface *topleft, *topright, *bottomleft,
-        *bottomright, *left, *right, *top, *bottom;
-	SDL_Rect dst;
-	
+		
 	blank = loadImage("blank");
 	for(i=0;i<9;i++) {
 		snprintf(filename, 256, "open%d",i);
@@ -294,12 +297,23 @@ void loadImages()
       Load background images and composite
       them onto a single background surface
     */
+	generateBackground();
+}
+
+void generateBackground()
+{
+	int i;
+	SDL_PixelFormat *fmt;
+	SDL_Rect dst;
+	SDL_Surface *topleft, *topright, *bottomleft,
+        *bottomright, *left, *right, *top, *bottom;
+
 	fmt = screen->format;
 	background = SDL_CreateRGBSurface(SDL_HWSURFACE,
-                                      screenRect.w, screenRect.h,
-                                      32,
-                                      fmt->Rmask, fmt->Gmask,
-                                      fmt->Bmask, fmt->Amask);
+						 screenRect.w, screenRect.h,
+						 32,
+						 fmt->Rmask, fmt->Gmask,
+						 fmt->Bmask, fmt->Amask);
 	topleft = loadImage("topleft");
 	topright = loadImage("topright");
 	bottomleft = loadImage("bottomleft");
@@ -348,7 +362,8 @@ void loadImages()
 	SDL_FreeSurface(top);
 	SDL_FreeSurface(bottom);
 	SDL_FreeSurface(left);
-	SDL_FreeSurface(right);	
+	SDL_FreeSurface(right);
+	
 }
 
 void initGame()
